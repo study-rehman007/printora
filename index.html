@@ -14,6 +14,8 @@
     --white: #ffffff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  button { touch-action: manipulation; }
   html { scroll-behavior: smooth; }
   body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -83,8 +85,13 @@
     align-items: start;
   }
   @media (max-width: 820px) {
-    .builder { grid-template-columns: 1fr; }
+    nav { padding: 20px 5vw; }
     nav ul { display: none; }
+    header { padding: 70px 6vw 60px; }
+    .builder { grid-template-columns: 1fr; gap: 30px; padding-bottom: 90px; }
+    .size-btn { width: 64px; height: 64px; }  /* bigger touch targets */
+    .step { margin-bottom: 44px; }
+    .dropzone { padding: 40px 18px; }
   }
 
   /* Shirt preview */
@@ -92,6 +99,14 @@
     position: sticky;
     top: 120px;
     text-align: center;
+  }
+
+  /* Compact sticky preview bar for mobile (scrolls away naturally) */
+  @media (max-width: 820px) {
+    .preview-wrap {
+      position: static;
+      margin-bottom: 10px;
+    }
   }
   .shirt {
     width: min(100%, 420px);
@@ -212,6 +227,32 @@
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* ---------- Mobile sticky summary ---------- */
+  .mobile-bar {
+    display: none;
+  }
+  @media (max-width: 820px) {
+    .mobile-bar {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--line);
+      padding: 12px 5vw;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 40;
+      font-size: 12px; letter-spacing: 0.08em;
+    }
+    .mobile-bar .order-mini {
+      background: var(--ink); color: var(--white);
+      border: none; padding: 12px 24px;
+      font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+      cursor: pointer; font-family: inherit;
+    }
+    footer { padding-bottom: 90px; }  /* keep footer above the bar */
+  }
+
   /* ---------- Footer ---------- */
   footer {
     border-top: 1px solid var(--line);
@@ -311,6 +352,11 @@
   </div>
 </main>
 
+<div class="mobile-bar" id="mobileBar">
+  <span>Size: <b id="miniSize">—</b></span>
+  <button class="order-mini" id="orderMini">Order · $29</button>
+</div>
+
 <footer>
   TEE. — Minimal shirts, maximal you
 </footer>
@@ -327,6 +373,7 @@
       btn.classList.add('selected');
       state.size = btn.dataset.size;
       document.getElementById('sumSize').textContent = state.size;
+      document.getElementById('miniSize').textContent = state.size;
     });
   });
 
@@ -342,9 +389,25 @@
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = e => {
-      previewImg.src = e.target.result;
-      previewImg.style.display = 'block';
-      placeholder.style.display = 'none';
+      /* downscale large photos so preview + submission stay light on mobile */
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const scale = MAX / Math.max(w, h);
+          w = Math.round(w * scale); h = Math.round(h * scale);
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          previewImg.src = c.toDataURL('image/png');
+        } else {
+          previewImg.src = e.target.result;
+        }
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+      };
+      img.src = e.target.result;
       state.fileName = file.name;
       fileNameEl.textContent = '✓ ' + file.name;
       sumArt.textContent = file.name.length > 18 ? file.name.slice(0, 18) + '…' : file.name;
@@ -370,6 +433,13 @@
     const name = document.getElementById('name').value.trim();
     if (!name) { showToast('Please enter your name'); return; }
     showToast('Order placed ✓ Thank you, ' + name.split(' ')[0] + '!');
+  });
+
+  /* Mini bar mirrors state */
+  document.getElementById('orderMini').addEventListener('click', () => {
+    const btn = document.getElementById('orderBtn');
+    btn.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    setTimeout(() => btn.click(), 450);
   });
 
   let toastTimer;
