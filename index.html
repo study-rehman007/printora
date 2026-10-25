@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TEE — Custom Printed Shirts</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --ink: #1a1a1a;
+    --muted: #8a8a8a;
+    --line: #e5e5e5;
+    --accent: #1a1a1a;
+    --white: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  /* ---------- Nav ---------- */
+  nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 6vw;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: 0.35em; }
+  nav ul { display: flex; gap: 36px; list-style: none; }
+  nav a {
+    text-decoration: none; color: var(--ink);
+    font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  nav a:hover { color: var(--muted); }
+
+  /* ---------- Hero ---------- */
+  header {
+    text-align: center;
+    padding: 120px 6vw 90px;
+  }
+  header h1 {
+    font-size: clamp(42px, 7vw, 84px);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+  header h1 em { font-style: normal; font-weight: 700; }
+  header p {
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 15px;
+    letter-spacing: 0.08em;
+  }
+  .cta {
+    display: inline-block;
+    margin-top: 44px;
+    padding: 16px 52px;
+    background: var(--accent);
+    color: var(--white);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    transition: all 0.25s ease;
+  }
+  .cta:hover { background: transparent; color: var(--ink); }
+
+  /* ---------- Builder ---------- */
+  .builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6vw;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 60px 6vw 120px;
+    align-items: start;
+  }
+  @media (max-width: 820px) {
+    .builder { grid-template-columns: 1fr; }
+    nav ul { display: none; }
+  }
+
+  /* Shirt preview */
+  .preview-wrap {
+    position: sticky;
+    top: 120px;
+    text-align: center;
+  }
+  .shirt {
+    width: min(100%, 420px);
+    margin: 0 auto;
+    display: block;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.08));
+  }
+  .print-area {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -46%);
+    width: 30%;
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .print-area img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+  .print-placeholder {
+    font-size: 11px; color: #bbb; letter-spacing: 0.2em; text-transform: uppercase;
+    text-align: center;
+  }
+  .shirt-stage { position: relative; display: inline-block; }
+
+  /* Controls */
+  .step { margin-bottom: 56px; }
+  .step-label {
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px;
+  }
+  .step-label span { color: var(--ink); font-weight: 700; margin-right: 12px; }
+
+  .sizes { display: flex; flex-wrap: wrap; gap: 12px; }
+  .size-btn {
+    width: 58px; height: 58px;
+    border: 1px solid var(--line);
+    background: var(--white);
+    font-size: 14px; letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .size-btn:hover { border-color: var(--ink); }
+  .size-btn.selected {
+    background: var(--ink); color: var(--white); border-color: var(--ink);
+  }
+
+  /* Upload */
+  .dropzone {
+    border: 1px dashed var(--line);
+    background: var(--white);
+    padding: 56px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--ink); background: #f4f4f4; }
+  .dropzone .icon { font-size: 28px; margin-bottom: 12px; }
+  .dropzone p { font-size: 13px; color: var(--muted); letter-spacing: 0.05em; }
+  .dropzone strong { color: var(--ink); }
+  #fileInput { display: none; }
+  .file-name {
+    margin-top: 14px; font-size: 12px; color: var(--muted);
+    letter-spacing: 0.05em; min-height: 18px;
+  }
+
+  /* Details */
+  .field { margin-bottom: 24px; }
+  .field label {
+    display: block; font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--white);
+    padding: 14px 16px;
+    font-family: inherit; font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--ink); }
+
+  .order-btn {
+    width: 100%;
+    padding: 18px;
+    background: var(--accent);
+    color: var(--white);
+    border: 1px solid var(--accent);
+    font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.25s ease;
+  }
+  .order-btn:hover { background: transparent; color: var(--ink); }
+
+  .summary {
+    margin-top: 28px; padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+  .summary b { color: var(--ink); }
+
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translate(-50%, 20px);
+    background: var(--ink); color: var(--white);
+    padding: 14px 32px; font-size: 12px; letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0; pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    text-align: center;
+    padding: 48px 6vw;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">TEE.</div>
+  <ul>
+    <li><a href="#design">Design</a></li>
+    <li><a href="#design">Sizes</a></li>
+    <li><a href="#design">Upload</a></li>
+  </ul>
+</nav>
+
+<header>
+  <h1>Your design.<br /><em>Our shirt.</em></h1>
+  <p>Pick a size, upload your artwork — we print it on premium cotton.</p>
+  <a class="cta" href="#design">Start Designing</a>
+</header>
+
+<main class="builder" id="design">
+
+  <!-- Live preview -->
+  <div class="preview-wrap">
+    <div class="shirt-stage">
+      <svg class="shirt" viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+        <path d="M105 20 L60 40 L20 90 L55 120 L60 100 L60 320 L240 320 L240 100 L245 120 L280 90 L240 40 L195 20 Q150 55 105 20 Z"
+              fill="#ffffff" stroke="#d8d8d8" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M105 20 Q150 55 195 20 Q150 75 105 20 Z" fill="#f2f2f2" stroke="#d8d8d8" stroke-width="2"/>
+      </svg>
+      <div class="print-area">
+        <img id="previewImg" alt="Your print" />
+        <div class="print-placeholder" id="placeholder">Your<br />artwork<br />here</div>
+      </div>
+    </div>
+    <p style="margin-top:28px; font-size:12px; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase;">
+      Live Preview — 100% Organic Cotton
+    </p>
+  </div>
+
+  <!-- Controls -->
+  <div>
+    <!-- STEP 1 -->
+    <section class="step">
+      <div class="step-label"><span>01</span> Choose your size</div>
+      <div class="sizes" id="sizes">
+        <button class="size-btn" data-size="XS">XS</button>
+        <button class="size-btn" data-size="S">S</button>
+        <button class="size-btn" data-size="M">M</button>
+        <button class="size-btn" data-size="L">L</button>
+        <button class="size-btn" data-size="XL">XL</button>
+        <button class="size-btn" data-size="XXL">XXL</button>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step">
+      <div class="step-label"><span>02</span> Upload your artwork</div>
+      <div class="dropzone" id="dropzone">
+        <div class="icon">↑</div>
+        <p><strong>Click to upload</strong> or drag &amp; drop<br />PNG, JPG or SVG — high resolution works best</p>
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
+      <div class="file-name" id="fileName"></div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step">
+      <div class="step-label"><span>03</span> Your details</div>
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Jane Doe" />
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="jane@example.com" />
+      </div>
+      <div class="field">
+        <label for="notes">Print notes (optional)</label>
+        <textarea id="notes" rows="3" placeholder="Placement, size of print, special instructions…"></textarea>
+      </div>
+
+      <button class="order-btn" id="orderBtn">Place Order</button>
+
+      <div class="summary">
+        <div>Size: <b id="sumSize">—</b><br />Artwork: <b id="sumArt">None</b></div>
+        <div style="text-align:right;">Price: <b>$29</b><br />Free shipping</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  TEE. — Minimal shirts, maximal you
+</footer>
+
+<div class="toast" id="toast">Order placed ✓</div>
+
+<script>
+  const state = { size: null, fileName: null };
+
+  /* --- Size selection --- */
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.size = btn.dataset.size;
+      document.getElementById('sumSize').textContent = state.size;
+    });
+  });
+
+  /* --- Upload --- */
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const previewImg = document.getElementById('previewImg');
+  const placeholder = document.getElementById('placeholder');
+  const fileNameEl = document.getElementById('fileName');
+  const sumArt = document.getElementById('sumArt');
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+      placeholder.style.display = 'none';
+      state.fileName = file.name;
+      fileNameEl.textContent = '✓ ' + file.name;
+      sumArt.textContent = file.name.length > 18 ? file.name.slice(0, 18) + '…' : file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  /* --- Order --- */
+  const toast = document.getElementById('toast');
+  document.getElementById('orderBtn').addEventListener('click', () => {
+    if (!state.size) { showToast('Please select a size'); return; }
+    if (!state.fileName) { showToast('Please upload artwork'); return; }
+    const name = document.getElementById('name').value.trim();
+    if (!name) { showToast('Please enter your name'); return; }
+    showToast('Order placed ✓ Thank you, ' + name.split(' ')[0] + '!');
+  });
+
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+</script>
+
+</body>
+</html>
